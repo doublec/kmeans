@@ -10,7 +10,7 @@ object KmeansMain extends App {
       Array("--backend", "c", "--genHarness", "--compile", "--test")
     } else if (args.map(_.toString).contains("v")) {
       println("Verilog generation")
-      Array("--backend", "v")
+      Array("--backend", "v", "--compile", "--test")
     } else {
       println("Unmanaged argument args are "+args.mkString("[",",","]") )
       Array()
@@ -51,12 +51,24 @@ chiselMainTest(argz,
   (m) => Min2OpTests(m)
 }
 */
-
+/*
   chiselMainTest(argz,
   () => {
       Module(ClosestOp(10))
   }) {
     (c) => ClosestOpTests(c)
   }
+*/
+  //chiselMainTest(argz,() => Module(CalcCentroidsOp(10,3)))(c => CalcCentroidsOpTests(c))
 
+  //chiselMainTest(argz,() => Module(LimitedAverageOp(4)))(a => LimitedAverageOpTests(a))
+  //chiselMainTest(argz,() => Module(LimitedAverageOp(1)))(a => LimitedAverageOpTests(a))
+
+  //chiselMainTest(argz,() => Module(OffsetGeneratorOp(6)))(o => OffsetGeneratorOpTests(o))
+
+  chiselMainTest(argz,() => Module(CalcNewCentroidsOp(3,2)))(o => CalcNewCentroidsOpTests(o))
+
+  //chiselMainTest(argz,() => Module(BoolSelectorOp()))(o => BoolSelectorOpTests(o))
+
+  //chiselMainTest(argz,() => Module(MultiInSelectorOp(5)))(m => MultiInSelectorOpTests(m))
 }

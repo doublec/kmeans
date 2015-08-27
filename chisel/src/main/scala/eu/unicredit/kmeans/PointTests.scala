@@ -12,7 +12,6 @@ trait PointOpsHelpers {
   final val SUB = 2
   final val DIV = 3
   final val MOD = 4
-  final val DIST = 5
 
   private var inner: Point = Point(0.0, 0.0)
 
