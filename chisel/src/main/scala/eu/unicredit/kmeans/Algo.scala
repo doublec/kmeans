@@ -1,8 +1,18 @@
 package eu.unicredit.kmeans
 
 import Chisel._
-import scala.math.sqrt
-import scala.util.Random
+
+case class IntToDblConversionOp(max: Int) extends Module with ImplicitInt {
+  val io = new Bundle {
+    val in = UInt(INPUT, width = 32)
+    val out = Dbl(OUTPUT)
+  }
+  val values =
+    Vec {for (i <- 0 to max) yield
+      Dbl(i)}
+
+  io.out := values(io.in)
+}
 
 case class SelectivePointOps(n: Int) extends Module with ImplicitInt {
   val io = new Bundle {
@@ -107,7 +117,141 @@ case class SelectiveAverageOp(n: Int, nCent: Int) extends Module with ImplicitIn
   }
 }
 
-case class CalcNewCentroids2Op(nPoints: Int, nCentroids: Int) extends Module with ImplicitInt {
+case class DistanceOp() extends Module with ImplicitInt {
+  val io = new Bundle {
+    val p1x = Dbl(INPUT)
+    val p1y = Dbl(INPUT)
+    val p2x = Dbl(INPUT)
+    val p2y = Dbl(INPUT)
+
+    val out = Dbl(OUTPUT)
+  }
+
+  val po1 = Module(PointOps())
+  val po2 = Module(PointOps())
+
+  po1.io.p1x <> io.p1x
+  po1.io.p1y <> io.p1y
+  po1.io.p2x <> io.p2x
+  po1.io.p2y <> io.p2y
+
+  po1.io.operation := 2
+
+  po2.io.p1x <> po1.io.poutx
+  po2.io.p1y <> po1.io.pouty
+
+  po2.io.operation := 4
+
+  io.out <> po2.io.out
+}
+
+
+
+case class Min2Op(i: Int) extends Module with ImplicitInt {
+  val io = new Bundle {
+    val value = Dbl(INPUT)
+    val oldMin = UInt(INPUT, width = 32)
+    val oldValue = Dbl(INPUT)
+
+    val newMin = UInt(OUTPUT, width = 32)
+    val newValue = Dbl(OUTPUT)
+  }
+
+  when (io.value >= io.oldValue) {
+    io.newMin := io.oldMin
+    io.newValue := io.oldValue
+  } .otherwise {
+    io.newMin := UInt(i)
+    io.newValue := io.value
+  }
+}
+
+case class MinOp(n: Int) extends Module with ImplicitInt {
+    val io = new Bundle {
+      val values = Vec.fill(n)(Dbl(INPUT))
+
+      val out = UInt(OUTPUT, width = 32)
+    }
+
+    val m2s =
+      for (i <- 0 until n-1) yield {
+        Module(Min2Op(i+1))
+      }
+
+    m2s(0).io.oldValue := io.values(0)
+    m2s(0).io.oldMin := UInt(0)
+
+    m2s(0).io.value := io.values(1)
+    for (i <- 1 until n-1) {
+      m2s(i).io.value <> io.values(i+1)
+      m2s(i).io.oldValue <> m2s(i-1).io.newValue
+      m2s(i).io.oldMin <> m2s(i-1).io.newMin
+    }
+
+    io.out := m2s(n-2).io.newMin
+}
+
+case class ClosestOp(n: Int) extends Module with ImplicitInt {
+  val io = new Bundle {
+    val pointX = Dbl(INPUT)
+    val pointY = Dbl(INPUT)
+
+    val xs = Vec.fill(n)(Dbl(INPUT))
+    val ys = Vec.fill(n)(Dbl(INPUT))
+
+    val closest = UInt(OUTPUT, width = 32)
+  }
+  val po =
+    for (i <- 0 until n) yield {
+      Module(DistanceOp())
+    }
+
+  val mo = Module(MinOp(n))
+
+  for (i <- 0 until n) yield {
+    po(i).io.p1x := io.pointX
+    po(i).io.p1y := io.pointY
+
+    po(i).io.p2x := io.xs(i)
+    po(i).io.p2y := io.ys(i)
+
+    mo.io.values(i) := po(i).io.out
+  }
+
+  io.closest := mo.io.out
+
+}
+
+case class CalcCentroidsOp(nPoints: Int, nCentroids: Int) extends Module with ImplicitInt {
+  val io = new Bundle {
+    val centroidsXs = Vec.fill(nCentroids)(Dbl(INPUT))
+    val centroidsYs = Vec.fill(nCentroids)(Dbl(INPUT))
+
+    val xs = Vec.fill(nPoints)(Dbl(INPUT))
+    val ys = Vec.fill(nPoints)(Dbl(INPUT))
+
+    val out = Vec.fill(nPoints)(UInt(OUTPUT, width = 32))
+  }
+
+  val cOps =
+    for (_ <- 0 until nPoints) yield
+      Module(ClosestOp(nCentroids))
+
+  for (i <- 0 until nPoints) {
+
+    cOps(i).io.pointX <> io.xs(i)
+    cOps(i).io.pointY <> io.ys(i)
+
+    for (k <- 0 until nCentroids) {
+      cOps(i).io.xs(k) <> io.centroidsXs(k)
+      cOps(i).io.ys(k) <> io.centroidsYs(k)
+    }
+
+    io.out(i) <> cOps(i).io.closest
+  }
+}
+
+case class CalcNewCentroidsOp(nPoints: Int, nCentroids: Int) extends Module with ImplicitInt {
   val io = new Bundle {
     val xs = Vec.fill(nPoints)(Dbl(INPUT))
     val ys = Vec.fill(nPoints)(Dbl(INPUT))
@@ -176,7 +320,7 @@ case class Algo(nPoints: Int, nCentroids: Int) extends Module with ImplicitInt {
     Module(CalcCentroidsOp(nPoints, nCentroids))
 
   val cluster =
-    Module(CalcNewCentroids2Op(nPoints, nCentroids))
+    Module(CalcNewCentroidsOp(nPoints, nCentroids))
 
   when (count === UInt(0)) {
     for (i <- 0 until nCentroids) {
@@ -227,114 +371,4 @@ case class Algo(nPoints: Int, nCentroids: Int) extends Module with ImplicitInt {
   }
 
   io.debug := count
-}
-
-case class AlgoTests(a: Algo) extends Tester(a) {
-
-  def toDouble(x: BigInt): Double = java.lang.Double.longBitsToDouble(x.longValue)
-
-  val iterations = 2
-
-  val points =
-    for (i <- 0 until a.nPoints) yield
-      (Random.nextDouble, Random.nextDouble)
-
-  //setup iterations to finish
-  poke(a.io.en, true)
-  poke(a.io.iterations, iterations)
-  step(1)
-  //check that is ok and set input
-  poke(a.io.en, true)
-  expect(a.io.done, 0)
-
-  for (i <- 0 until a.nPoints) {
-    poke(a.io.xs(i), points(i)._1)
-    poke(a.io.ys(i), points(i)._2)
-  }
-
-  step(1)
-  //start!
-  poke(a.io.en, false)
-  expect(a.io.debug, 0)
-  expect(a.io.done, 0)
-
-  //at this step centroids are the first N points
-  /*
-  expect(a.io.centroidsXs(0), 0.0)
-  expect(a.io.centroidsYs(0), 0.0)
-  expect(a.io.centroidsXs(1), 5.0)
-  expect(a.io.centroidsYs(1), 5.0)
-  */
-  step(1)
-
-  for (s <- 1 to iterations) {
-    expect(a.io.debug, s)
-
-    val last =
-      if (s == iterations) 1
-      else 0
-
-    expect(a.io.done, last)
-
-    val kstep = ScalaAlgo.run(points.toList, s, a.nCentroids)
-
-    var check1 = scala.collection.mutable.ListBuffer[(Double, Double)]()
-
-    for (i <- 0 until a.nCentroids)
-      check1 = check1 :+ (toDouble(peek(a.io.centroidsXs(i))), toDouble(peek(a.io.centroidsYs(i))))
-    println("from board -> "+check1)
-
-    for (i <- 0 until a.nCentroids)
-      check1 -= kstep(i)
-    println("from board -> "+kstep)
-
-    expect(check1.length == 0, "is empty?"+check1)
-
-    step(1)
-  }
-
-  //End
-  expect(a.io.debug, 2)
-  expect(a.io.done, 1)
-
-  expect(a.io.centroidsXs(0), 0.0)
-  expect(a.io.centroidsYs(0), 0.0)
-  expect(a.io.centroidsXs(1), 0.0)
-  expect(a.io.centroidsYs(1), 0.0)
-
-}
-
-object ScalaAlgo {
-  type Point = (Double, Double)
-
-  implicit class RichPoint(val x: Point) extends AnyVal {
-    def /(k: Double): Point = (x._1 / k, x._2 / k)
-
-    def +(y: Point) = ((x._1 + y._1), (x._2 + y._2))
-    def -(y: Point) = ((x._1 - y._1), (x._2 - y._2))
-
-    def modulus = sqrt(sq(x._1) + sq(x._2))
-  }
-
-  def run(xs: List[Point], iters: Int, nCent: Int) = {
-    var centroids = xs take nCent
-
-    for (i <- 1 to iters) {
-      centroids = clusters(xs, centroids) map average
-    }
-    //clusters(xs, centroids)
-    centroids
-  }
-
-  def clusters(xs: List[Point], centroids: List[Point]) =
-    (xs groupBy { x => closest(x, centroids) }).values.toList
-
-  def closest(x: Point, choices: List[Point]) =
-    choices minBy { y => dist(x, y) }
-
-  def sq(x: Double) = x * x
-
-  def dist(x: Point, y: Point) = (x - y).modulus
-
-  def average(xs: List[Point]) = xs.reduce(_ + _) / xs.size
 }

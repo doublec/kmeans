@@ -57,8 +57,11 @@ case class PointOps() extends Module with ImplicitInt {
 }
 
 case class Point(x: Dbl, y: Dbl) {
-  val _x = java.lang.Double.longBitsToDouble(x.litValue().longValue)
-  val _y = java.lang.Double.longBitsToDouble(y.litValue().longValue)
+  private def toDouble(k: Dbl) =
+    java.lang.Double.longBitsToDouble(k.litValue().longValue)
+
+  val _x = toDouble(x)
+  val _y = toDouble(y)
 
   def +(p2: Point) = Point(x + p2.x, y + p2.y)
   def -(p2: Point) = Point(x - p2.x, y - p2.y)
@@ -67,8 +70,6 @@ case class Point(x: Dbl, y: Dbl) {
   private def sq(d: Dbl): Dbl = d * d
 
   def modulus: Dbl = (sq(x) + sq(y)).sqrt
-
-  //def dist(p2: Point): Dbl = (this - p2).modulus
 }
 
 object Point {
