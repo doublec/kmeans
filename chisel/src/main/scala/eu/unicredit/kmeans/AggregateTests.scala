@@ -316,6 +316,59 @@ case class MultiInSelectorOpTests(m: MultiInSelectorOp) extends Tester(m) {
 }
 
 case class CalcNewCentroidsOpTests(c: CalcNewCentroidsOp) extends Tester(c) {
+  /*
+  val x =
+    for (_ <- 1 to c.nPoints) yield Random.nextDouble
+
+  val y =
+    for (_ <- 1 to c.nPoints) yield Random.nextDouble
+
+  val cen =
+    for (_ <- 1 to c.nPoints) yield Random.nextInt(c.nCentroids+1)
+
+  for (i <- 0 until c.nPoints) {
+    poke(c.io.xs(i), x(i))
+    poke(c.io.ys(i), y(i))
+    poke(c.io.cent(i), 0)
+  }
+  for (i <- 0 until c.nCentroids) {
+    expect(c.io.centroidXs(0), x.zip(cen).filter(_._2 == i).map(_._1).sum / cen.filter(_._2 == i).size)
+    expect(c.io.centroidYs(0), y.zip(cen).filter(_._2 == i).map(_._1).sum / cen.filter(_._2 == i).size)
+  }
+
+  step(1)
+*/
+poke(c.io.xs(0), 1.0)
+poke(c.io.ys(0), 1.0)
+poke(c.io.cent(0), 0)
+
+poke(c.io.xs(1), 2.0)
+poke(c.io.ys(1), 2.0)
+poke(c.io.cent(1), 0)
+
+expect(c.io.centroidXs(0), 1.5)
+expect(c.io.centroidYs(0), 1.5)
+expect(c.io.centroidXs(1), 0.0)
+expect(c.io.centroidYs(1), 0.0)
+
+step(1)
+
+poke(c.io.xs(0), 1.0)
+poke(c.io.ys(0), 1.0)
+poke(c.io.cent(0), 1)
+
+poke(c.io.xs(1), 2.0)
+poke(c.io.ys(1), 2.0)
+poke(c.io.cent(1), 0)
+
+expect(c.io.centroidXs(0), 1.0)
+expect(c.io.centroidYs(0), 1.0)
+expect(c.io.centroidXs(1), 2.0)
+expect(c.io.centroidYs(1), 2.0)
+
+step(1)
+
+  /*
   poke(c.io.xs(0), 1.0)
   poke(c.io.ys(0), 1.0)
   poke(c.io.cent(0), 0)
@@ -373,4 +426,5 @@ case class CalcNewCentroidsOpTests(c: CalcNewCentroidsOp) extends Tester(c) {
   expect(c.io.centroidYs(1), 2.5)
 
   step(1)
+  */
 }

@@ -338,6 +338,8 @@ case class CalcNewCentroidsOp(nPoints: Int, nCentroids: Int) extends Module with
     avgs(k).io.limit := limits(k)
   }
 
+  //da rivedere la parte dei selectors...sbagliano da qualche parte con multipli centroidi
+  //di base probabilmente manca l'N output fillato da zeri
   val selectorsX =
     (for (ip <- 0 until nPoints) yield
       for (ic <- 0 until nCentroids) yield
@@ -348,19 +350,31 @@ case class CalcNewCentroidsOp(nPoints: Int, nCentroids: Int) extends Module with
       for (ic <- 0 until nCentroids) yield
         Module(MultiInSelectorOp(nPoints))).flatten
 
+  val selectorPX =
+    for (ic <- 0 until nPoints) yield
+      Module(MultiInSelectorOp(nCentroids))
+
+  val selectorPY =
+    for (ic <- 0 until nPoints) yield
+      Module(MultiInSelectorOp(nCentroids))
+
   for (ip <- 0 until nPoints) {
     for (ic <- 0 until nCentroids) {
-      avgs(ic).io.xs(ip) <> selectorsX(ip + (ic * nPoints)).io.out
-      avgs(ic).io.ys(ip) <> selectorsY(ip + (ic * nPoints)).io.out
+      selectorPX(ip).io.in(ic) <> selectorsX(ip + (ic * nPoints)).io.out
+      selectorPY(ip).io.in(ic) <> selectorsY(ip + (ic * nPoints)).io.out
+      avgs(ic).io.xs(ip) <> selectorPX(ip).io.out//selectorsX(ip + (ic * nPoints)).io.out
+      avgs(ic).io.ys(ip) <> selectorPX(ip).io.out//selectorsY(ip + (ic * nPoints)).io.out
     }
   }
 
   for (ip <- 0 until nPoints) {
+    selectorPX(ip).io.select := io.cent(ip)
+    selectorPY(ip).io.select := io.cent(ip)
     for (ic <- 0 until nCentroids) {
       selectorsX(ip + (ic * nPoints)).io.in(ip) <> io.xs(ip)
-      selectorsX(ip + (ic * nPoints)).io.select := ((io.cent(ip) * UInt(nPoints)) + offsets.io.out(ip))
+      selectorsX(ip + (ic * nPoints)).io.select := /*((io.cent(ip) * UInt(nPoints)) +*/ ( offsets.io.out(ip))
       selectorsY(ip + (ic * nPoints)).io.in(ip) <> io.ys(ip)
-      selectorsY(ip + (ic * nPoints)).io.select := ((io.cent(ip) * UInt(nPoints)) + offsets.io.out(ip))
+      selectorsY(ip + (ic * nPoints)).io.select := /*((io.cent(ip) * UInt(nPoints)) +*/ ( offsets.io.out(ip))
     }
   }
 

@@ -66,9 +66,15 @@ chiselMainTest(argz,
 
   //chiselMainTest(argz,() => Module(OffsetGeneratorOp(6)))(o => OffsetGeneratorOpTests(o))
 
-  chiselMainTest(argz,() => Module(CalcNewCentroidsOp(3,2)))(o => CalcNewCentroidsOpTests(o))
+  //chiselMainTest(argz,() => Module(CalcNewCentroidsOp(2,2)))(o => CalcNewCentroidsOpTests(o))
 
   //chiselMainTest(argz,() => Module(BoolSelectorOp()))(o => BoolSelectorOpTests(o))
 
   //chiselMainTest(argz,() => Module(MultiInSelectorOp(5)))(m => MultiInSelectorOpTests(m))
+
+  //chiselMainTest(argz,() => Module(SelectiveAverageOp(3,1)))(m => SelectiveAverageOpTests(m))
+
+  //chiselMainTest(argz,() => Module(CalcNewCentroids2Op(10,5)))(o => CalcNewCentroids2OpTests(o))
+
+  chiselMainTest(argz,() => Module(Algo(10,4)))(a => AlgoTests(a))
 }
