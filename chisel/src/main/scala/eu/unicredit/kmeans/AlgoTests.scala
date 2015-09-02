@@ -289,10 +289,12 @@ case class AlgoTests(a: Algo) extends Tester(a) {
     for (i <- 0 until a.nCentroids)
       check1 = check1 :+ (toDouble(peek(a.io.centroidsXs(i))), toDouble(peek(a.io.centroidsYs(i))))
 
+    val res = check1.clone
+
     for (i <- 0 until a.nCentroids)
       check1 -= kstep(i)
 
-    expect(check1.length == 0, "CHECK -> "+check1)
+    expect(check1.length == 0, "CHECK -> \n"+ check1 + "\n" + kstep + "\n" + res)
 
     step(1)
   }

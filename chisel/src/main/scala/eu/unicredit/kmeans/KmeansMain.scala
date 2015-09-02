@@ -15,7 +15,7 @@ object KmeansMain extends App {
       println("Unmanaged argument args are "+args.mkString("[",",","]") )
       Array()
     }
-
+/*
   chiselMainTest(argz, () => Module(PointOps())){(p) => PointOpsTests(p)}
 
   chiselMainTest(argz, () => Module(DistanceOp())){(d) => DistanceOpTests(d)}
@@ -31,6 +31,6 @@ object KmeansMain extends App {
   chiselMainTest(argz,() => Module(SelectiveAverageOp(3,1)))(m => SelectiveAverageOpTests(m))
 
   chiselMainTest(argz,() => Module(CalcNewCentroidsOp(10,5)))(o => CalcNewCentroidsOpTests(o))
-
-  chiselMainTest(argz,() => Module(Algo(10,4)))(a => AlgoTests(a))
+*/
+  chiselMainTest(argz,() => Module(Algo(1000,4)))(a => AlgoTests(a))
 }
