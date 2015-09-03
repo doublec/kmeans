@@ -5,7 +5,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 
-object Main extends App {
+object EntryScala extends App {
   def readPoints(path: String) = {
     val json = Source.fromFile(path).mkString
     implicit val formats = DefaultFormats
@@ -20,6 +20,7 @@ object Main extends App {
   val start = System.currentTimeMillis
   for (i <- 1 to iterations) {
     Algo.run(xs_x, xs_y)
+    //Algo.run2(xs_x, xs_y)
   }
   val time = (System.currentTimeMillis - start) / iterations
 

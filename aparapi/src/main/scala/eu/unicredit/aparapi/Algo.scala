@@ -39,7 +39,7 @@ object Algo {
 			centroids_y = newcker.centroids_y
 		}
 
-		//println("Final centroids \n"+centroids_x.zip(centroids_y).mkString("[", ",\n","]"))
+		println("Final centroids \n"+centroids_x.zip(centroids_y).mkString("[", ",\n","]"))
 	}
 
 }
