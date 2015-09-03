@@ -35,7 +35,7 @@ public class NewCentroidsKernel extends Kernel {
       float x_sum = 0;
       float y_sum = 0;
       int count = 0;
-      for (int k=1; k < xs_x.length; k++) {
+      for (int k=0; k < xs_x.length; k++) {
         if (cents[k] == i) {
           count++;
           x_sum = x_sum + xs_x[k];
