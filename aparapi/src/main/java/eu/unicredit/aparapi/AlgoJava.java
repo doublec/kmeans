@@ -15,7 +15,7 @@ public class AlgoJava {
 	Range range;
 
 	float[] centroids_x;
-	float[] centroids_y; 
+	float[] centroids_y;
 
 	public AlgoJava(float[] xs_x, float[] xs_y) {
 		range = KmeansKernel.createRange(xs_x.length);
@@ -25,7 +25,7 @@ public class AlgoJava {
 	}
 
 	public void run() {
-		kmker.execute(range, 2*iters+1);
+		kmker.execute(range, 2 * iters + 1);
 		centroids_x = kmker.centroids_x;
 		centroids_y = kmker.centroids_y;
 	}
