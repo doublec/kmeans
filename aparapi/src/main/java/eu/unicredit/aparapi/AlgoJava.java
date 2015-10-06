@@ -1,59 +1,32 @@
 package eu.unicredit.aparapi;
 
+import com.amd.aparapi.Range;
+import com.amd.aparapi.device.Device;
+
 public class AlgoJava {
 
 	int n = 10;
 	int iters = 15;
 
-	ClosestKernel cloker = new ClosestKernel();
+	KmeansKernel kmker;
 
-	NewCentroidsKernel newcker = new NewCentroidsKernel();
+	int global_width = 100000;
+	int local_width = 500;
+	Range range;
 
-	int xs_n;
-
-	float[] centroids_x = new float[n];
-	float[] centroids_y = new float[n]; 
-
+	float[] centroids_x;
+	float[] centroids_y; 
 
 	public AlgoJava(float[] xs_x, float[] xs_y) {
-		newcker.setCentroids(n);
-		cloker.setXs(xs_x, xs_y);
-		newcker.setXs(xs_x, xs_y);
-
-		xs_n = xs_x.length;
-		for (int i=0; i < n; i++) {
-			centroids_x[i] = xs_x[i];
-			centroids_y[i] = xs_y[i];
-		}
+		range = KmeansKernel.createRange(xs_x.length);
+		kmker = new KmeansKernel(range, xs_x, xs_y, n);
+		System.out.println("Best " + Device.best());
+		System.out.println("Execution mode: " + kmker.getExecutionMode());
 	}
 
-
 	public void run() {
-
-		for (int i=0; i < iters; i++) {
-
-			cloker.setCentroids(centroids_x, centroids_y);
-
-			cloker.execute(xs_n);
-
-			int[] cents = cloker.out;
-
-			newcker.setCents(cents);
-
-			newcker.execute(n);
-
-			centroids_x = newcker.centroids_x;
-			centroids_y = newcker.centroids_y;
-			/*for (int c=0; c < n; c++) {
-				centroids_x[c] = newcker.centroids_x[c];
-				centroids_x[c] = newcker.centroids_x[c];
-			}*/
-		}
-
-		System.out.println("Final centroids [");
-		for (int i = 0 ; i < n; i++) {
-			System.out.print(centroids_x[i] +", "+centroids_y[i]+"\n");
-		}
-		System.out.println("]");
+		kmker.execute(range, 2*iters+1);
+		centroids_x = kmker.centroids_x;
+		centroids_y = kmker.centroids_y;
 	}
 }

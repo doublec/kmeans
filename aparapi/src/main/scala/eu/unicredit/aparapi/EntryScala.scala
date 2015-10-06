@@ -13,16 +13,17 @@ object EntryScala extends App {
     parse(json).extract[List[List[Double]]] map { case List(a, b) => (a, b) }
   }
 
-  val iterations = 1//00
+  val iterations = 100
   val points = readPoints("../points.json")
   val xs_x = points.map(_._1.toFloat).toArray
   val xs_y = points.map(_._2.toFloat).toArray
+  val algo = new AlgoScala(xs_x, xs_y)
   val start = System.currentTimeMillis
   for (i <- 1 to iterations) {
-    Algo.run(xs_x, xs_y)
-    //Algo.run2(xs_x, xs_y)
+    algo.run
   }
   val time = (System.currentTimeMillis - start) / iterations
 
   println(s"Made $iterations iterations with an average of $time milliseconds")
+  println("Final centroids \n"+algo.centroids_x.zip(algo.centroids_y).mkString("[", ",\n","]"))
 }
