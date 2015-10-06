@@ -18,7 +18,10 @@ public class KmeansKernel extends Kernel {
   @Local int[] lcount;
 
   public static Range createRange(int length) {
-    return Range.create(Device.best(), length);
+    int len2 = 1;
+    while (len2 < length) len2 <<= 1;
+    System.out.println(length + " - " + len2);
+    return Range.create(Device.best(), len2);
   }
 
   public KmeansKernel(Range range, float[] xs_x, float[] xs_y, int n) {
@@ -50,24 +53,29 @@ public class KmeansKernel extends Kernel {
         centroids_x[i] = xs_x[i];
         centroids_y[i] = xs_y[i];
       }
-    } else if (getPassId() % 2 == 1) { // odd step
+    }
+    else if (getPassId() % 2 == 1) { // odd step
       // closest centroid
       int i = getGlobalId();
-      int minIndex = 0;
-      float minDist = dist(i, 0);
+      if (i < cents.length) {
+        int minIndex = 0;
+        float minDist = dist(i, 0);
 
-      float dist = minDist;
-      for (int k = 1; k < centroids_x.length; k++) {
-        dist = dist(i, k);
-        if (dist < minDist) {
-          minDist = dist;
-          minIndex = k;
+        float dist = minDist;
+        for (int k=1; k < centroids_x.length; k++) {
+          dist = dist(i, k);
+          if (dist < minDist) {
+            minDist = dist;
+            minIndex = k;
+          }
         }
+        cents[i] = minIndex;
       }
-      cents[i] = minIndex;
-    } else if (getPassId() % 2 == 0) { // even step
+    }
+    else if (getPassId() % 2 == 0) { // even step
       // new centroids
-      int size = getNumGroups();
+      int gspan = getNumGroups();
+      int lsize = getLocalSize();
       int l = getLocalId();
       int g = getGroupId();
       lc_x[l] = 0.0f;
@@ -75,10 +83,10 @@ public class KmeansKernel extends Kernel {
       lcount[l] = 0;
 
       if (g < centroids_x.length) {
-        int start = l * size;
-        int end = start + size;
+        int start = l * gspan;
+        int end = start + gspan;
         for (int k = start; k < end; k++) {
-          if (cents[k] == g) {
+          if (k < cents.length && cents[k] == g) {
             lc_x[l] += xs_x[k];
             lc_y[l] += xs_y[k];
             lcount[l]++;
@@ -88,25 +96,31 @@ public class KmeansKernel extends Kernel {
 
       localBarrier();
 
-      if (g < centroids_x.length && l == 0) {
-        float x_sum = lc_x[0];
-        float y_sum = lc_y[0];
-        int count = lcount[0];
-        // serial sum of partial results
-        for (int k = 1; k < getLocalSize(); k++) {
-          x_sum += lc_x[k];
-          y_sum += lc_y[k];
-          count += lcount[k];
+      // parallel sum of partial results
+      for (int lspan = 1; lspan < lsize; lspan *= 2) {
+        if (g < centroids_x.length) {
+          int next = (l + 1) * lspan * 2 - 1;
+          if (next < lsize) {
+            int prev = next - lspan;
+            lc_x[next] += lc_x[prev];
+            lc_y[next] += lc_y[prev];
+            lcount[next] += lcount[prev];
+          }
         }
-        if (x_sum == 0.0f)
+
+        localBarrier();
+      }
+
+      if (g < centroids_x.length && l == lsize - 1) {
+        if (lc_x[l] == 0.0f)
           centroids_x[g] = 0.0f;
         else
-          centroids_x[g] = x_sum / count;
+          centroids_x[g] = lc_x[l] / lcount[l];
 
-        if (y_sum == 0.0f)
+        if (lc_y[l] == 0.0f)
           centroids_y[g] = 0.0f;
         else
-          centroids_y[g] = y_sum / count;
+          centroids_y[g] = lc_y[l] / lcount[l];
       }
     }
   }
