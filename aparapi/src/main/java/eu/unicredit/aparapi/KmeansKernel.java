@@ -13,6 +13,10 @@ public class KmeansKernel extends Kernel {
 
     int[] cents;
 
+    @Local float[] lc_x;
+    @Local float[] lc_y;
+    @Local int[] lcount;
+
     public static Range createRange(int length) {
       return Range.create(Device.best(), length);
     }
@@ -25,6 +29,10 @@ public class KmeansKernel extends Kernel {
       this.cents = new int[xs_x.length];
       this.centroids_x = new float[n];
       this.centroids_y = new float[n];
+
+      lc_x = new float[range.getLocalSize(0)];
+      lc_y = new float[range.getLocalSize(0)];
+      lcount = new int[range.getLocalSize(0)];
     } 
 
     public float dist(int xs_i, int c_i) {
@@ -61,28 +69,46 @@ public class KmeansKernel extends Kernel {
       } 
       else if (getPassId() % 2 == 0) { // even step
         // new centroids
-        if (getGroupId() < centroids_x.length && getLocalId() == 0) {
-          int i = getGroupId();
-          float x_sum = 0;
-          float y_sum = 0;
-          int count = 0;
-          for (int k=0; k < xs_x.length; k++) {
-            if (cents[k] == i) {
-              count++;
-              x_sum = x_sum + xs_x[k];
-              y_sum = y_sum + xs_y[k];
+        int size = getNumGroups();
+        int l = getLocalId();
+        int g = getGroupId();
+        lc_x[l] = 0.0f;
+        lc_y[l] = 0.0f;
+        lcount[l] = 0;
+
+        if (g < centroids_x.length) {
+          int start = l*size;
+          int end = start+size;
+          for (int k = start; k < end; k++) {
+            if (cents[k] == g) {
+              lc_x[l] += xs_x[k];
+              lc_y[l] += xs_y[k];
+              lcount[l]++;
             }
+          } 
+        }
+
+        localBarrier();
+
+        if (g < centroids_x.length && l == 0) {
+          float x_sum = lc_x[0];
+          float y_sum = lc_y[0];
+          int count = lcount[0];
+          // serial sum of partial results
+          for (int k = 1; k < getLocalSize(); k++) {
+            x_sum += lc_x[k];
+            y_sum += lc_y[k];
+            count += lcount[k];
           }
-
           if (x_sum == 0.0f)
-            centroids_x[i] = 0.0f;
+            centroids_x[g] = 0.0f;
           else
-            centroids_x[i] = x_sum / count;
-
+            centroids_x[g] = x_sum / count;
+  
           if (y_sum == 0.0f)
-            centroids_y[i] = 0.0f;
+            centroids_y[g] = 0.0f;
           else
-            centroids_y[i] = y_sum / count;
+            centroids_y[g] = y_sum / count;
         }
       }
     }
