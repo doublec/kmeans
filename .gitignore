@@ -1,3 +1,5 @@
+aparapi/project/target
+aparapi/target
 cuda/build/*
 cuda/.metadata
 cuda/RemoteSystemsTempFiles
