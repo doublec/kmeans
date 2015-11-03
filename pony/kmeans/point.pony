@@ -1,20 +1,18 @@
 use "collections"
 
-class Point is (Hashable & Equatable[Point])
-  var x: F64
-  var y: F64
+class val Point is (Hashable & Equatable[Point])
+  let x: F64
+  let y: F64
 
-  new create(x': F64, y': F64) =>
+  new val create(x': F64, y': F64) =>
     x = x'
     y = y'
 
   fun string(): String =>
     "Point{ x: "+x.string( where prec = 16)+", y: "+y.string( where prec = 16)+"}"
 
-  fun ref add(p: Point): Point =>
-    x = x + p.x
-    y = y + p.y
-    this
+  fun add(p: Point): Point =>
+    Point(x + p.x, y + p.y)
 
   fun sub(p: Point): Point => Point(x - p.x, y - p.y)
 

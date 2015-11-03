@@ -1,16 +1,23 @@
+use "time"
 use "collections"
 
-class Kmeans
+actor Kmeans
+  var xs: Array[Point]
+  var centroids: Array[Point]
+
+  new create() =>
+    xs = Array[Point]
+    centroids = Array[Point]
 
   fun dist(p1: Point, p2: Point): F64 =>
     (p1 - p2).modulus()
 
-  fun average(xs: Array[Point]): Point =>
+  fun ref average(ys: Array[Point]): Point =>
     var tmp = Point(0,0)
-    for p in xs.values() do
-      tmp + p
+    for p in ys.values() do
+      tmp = tmp + p
     end 
-    tmp / xs.size().f64()
+    tmp / ys.size().f64()
 
   fun closest(x: Point, choices: Array[Point]): Point =>
     var tmp = Point(0, 0)
@@ -24,7 +31,7 @@ class Kmeans
     end
     tmp
 
-  fun clusters(xs: Array[Point], centroids: Array[Point]): Map[Point, Array[Point]] =>
+  fun ref clusters(): Map[Point, Array[Point]] =>
     let hm: Map[Point, Array[Point]] = hm.create()
     for c in centroids.values() do
       hm(c) = Array[Point]()
@@ -40,9 +47,12 @@ class Kmeans
     end
 
     hm
-    
-  fun run(xs: Array[Point], n: U64, iters: U64, env: Env): Array[Point] =>
-    var centroids = Array[Point]()
+
+  be push(p: Point) =>
+    xs.push(consume p)
+
+  be run(n: U64, iters: U64, env: Env) =>
+    centroids = Array[Point]()
     var j: U64 = 0
     var i: U64 = 0
     while i < n do
@@ -54,7 +64,7 @@ class Kmeans
 
     i = 1
     while i <= iters do
-      let m = clusters(xs, centroids)
+      let m = clusters()
       j = 0
       let newCentroids = Array[Point]()
       while j < n do
@@ -76,4 +86,14 @@ class Kmeans
       i = i + 1
     end
 
-    centroids
+  be finish(before: U64, iters: U64, env: Env) =>
+    let after = Time.millis()
+
+    env.out.print("Final centroids")
+    for p in centroids.values() do
+      env.out.print(p.string())
+    end
+
+    let t = (after - before) / iters
+    env.out.print("Average time is "+ t.string())
+

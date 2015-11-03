@@ -4,7 +4,7 @@ use "files"
 
 actor Main
   new create(env: Env) =>
-    let xs = Array[Point]()
+    let kmeans = Kmeans
 
     let caps = recover val FileCaps.set(FileRead).set(FileStat) end
 
@@ -24,29 +24,23 @@ actor Main
       for el in (doc.data as JsonArray).data.values() do
         let x = ((el as JsonArray).data(0) as F64)
         let y = ((el as JsonArray).data(1) as F64)
-        xs.push(Point(x, y))
+        kmeans.push(Point(x, y))
       end
     end
 
     let n: U64 = 10
     let iters: U64 = 15
 
-    let before = Time.millis()
     //must be increased to 100
-    let iterations: U64 = 10
+    let iterations: U64 = 100
+    let before = Time.millis()
 
     var i: U64 = 0
     while i < (iterations - 1) do
-      Kmeans.run(xs, n, iters, env)
+      kmeans.run(n, iters, env)
       i = i + 1
     end
-    let res = Kmeans.run(xs, n, iters, env)
-    let after = Time.millis()
+    kmeans.run(n, iters, env)
 
-    env.out.print("Final centroids")
-    for p in res.values() do
-      env.out.print(p.string())
-    end
+    kmeans.finish(before, iterations, env)
 
-    let t = (after - before) / iterations
-    env.out.print("Average time is "+ t.string())
